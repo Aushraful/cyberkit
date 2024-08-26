@@ -1,0 +1,86 @@
+version: '3.9'
+
+networks:
+    cyberkit_network:
+        driver: bridge
+
+services:
+    # Nginx service
+    cyberkit-nginx:
+        build:
+            context: .
+            dockerfile: ./docker/nginx/Dockerfile
+        container_name: cyberkit-nginx
+        ports:
+            - ${FORWARD_NGINX_PORT:-8000}:80
+        depends_on:
+            - cyberkit-api
+        volumes:
+            - ./src:/var/www/cyberkit
+        restart: unless-stopped
+        networks:
+            - cyberkit_network
+
+    # API service
+    cyberkit-api:
+        build:
+            context: .
+            dockerfile: ./docker/php-fpm/Dockerfile
+            args:
+                USR: ${HOST_USR}
+                UID: ${HOST_UID}
+                GID: ${HOST_GID}
+                APP_ENV: ${HOST_ENV}
+        container_name: cyberkit-api
+        ports:
+            - ${FORWARD_API_PORT:-9000}:9000
+        depends_on:
+            - cyberkit-mysql
+            - cyberkit-nmap
+        volumes:
+            - ./src:/var/www/cyberkit
+        networks:
+            - cyberkit_network
+
+    # MySQL service
+    cyberkit-mysql:
+        build:
+            context: .
+            dockerfile: ./docker/mysql/Dockerfile
+        container_name: cyberkit-mysql
+        restart: unless-stopped
+        ports:
+            - "${FORWARD_DB_PORT:-3306}:3306"
+        volumes:
+            - mysql_volume:/var/lib/mysql
+        networks:
+            - cyberkit_network
+
+    # PHPMyAdmin service
+    cyberkit-phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: cyberkit-phpmyadmin
+        restart: unless-stopped
+        depends_on:
+            - cyberkit-mysql
+        ports:
+            - "${FORWARD_PHPMYADMIN_PORT:-8888}:80"
+        environment:
+            PMA_HOST: cyberkit-mysql
+            UPLOAD_LIMIT: 100000000 # 100 MB (in decimal)
+        networks:
+            - cyberkit_network
+    
+    # Nmap service
+    cyberkit-nmap:
+        build:
+            context: ./docker/cybersecurity
+            dockerfile: ./scanning/network-scanning/nmap/Dockerfile
+        container_name: cyberkit-nmap
+        ports:
+            - "${FORWARD_NMAP_PORT:-5000}:5000"
+        networks:
+            - cyberkit_network
+
+volumes:
+    mysql_volume:
