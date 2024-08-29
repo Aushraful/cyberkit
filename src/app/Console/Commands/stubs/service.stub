@@ -1,0 +1,18 @@
+<?php
+
+namespace {{namespace}};
+
+use App\Repositories\Contracts\ModelNameInterface;
+use App\Http\Resources\ModelNameResource;
+use App\Http\Resources\ModelNameResourceCollection;
+use Illuminate\Support\Facades\Validator;
+
+class ClassName
+{
+    private $repository;
+
+    public function __construct(ModelNameInterface $repository)
+    {
+        $this->repository = $repository;
+    }
+}
