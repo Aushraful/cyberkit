@@ -118,15 +118,28 @@ abstract class BaseRepository
 
         try {
             foreach ($relations as $key => $relation) {
-                $model->{$relation}($relationParams[$key])->forceDelete();
+                if (method_exists($model, $relation)) {
+                    // Assuming $relationParams is optional for each relation
+                    $relatedQuery = $model->{$relation}(...($relationParams[$key] ?? []));
+
+                    if (is_callable([$relatedQuery, 'forceDelete'])) {
+                        $relatedQuery->forceDelete();
+                    } else {
+                        throw new \Exception("The relation '{$relation}' does not support forceDelete.");
+                    }
+                } else {
+                    throw new \Exception("The relation '{$relation}' does not exist on the model.");
+                }
             }
 
             $model->forceDelete();
-        } catch (\Exception $exception) {
-            DB::rollback();
-            throw $exception;
-        }
 
-        DB::commit();
+            DB::commit(); // Commit after successful deletion
+        } catch (\Exception $exception) {
+            DB::rollback(); // Rollback if something goes wrong
+
+            // Consider logging the exception for debugging purposes
+            throw $exception; // Rethrow the exception
+        }
     }
 }
