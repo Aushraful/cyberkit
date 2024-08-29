@@ -9,6 +9,11 @@ echo "Generating application encryption key..."
 php artisan key:generate
 echo "Done."
 
+echo "Configuring JWT auth..."
+php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
+php artisan jwt:secret
+echo "Done."
+
 echo "Linking storage..."
 php artisan storage:link
 echo "Done."
@@ -16,11 +21,6 @@ echo "Done."
 echo "Ensure correct ownership..."
 chown -R HOST_USR:HOST_USR /var/www/cyberkit
 echo "Done."
-
-# echo "Setting storage permission..."
-# chown -R www-data:www-data storage
-# chmod -R 775 storage
-# echo "Done."
 
 echo "Setting storage and cache permissions..."
 chown -R www-data:www-data storage
